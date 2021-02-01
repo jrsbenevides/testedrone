@@ -46,8 +46,10 @@ class globalPlanner:
         cmdvel = Twist()
 
         if(cmdvelglb.poses[self.agent].orientation.y > 0):
+            print("Taking Off")            
             self.takeoff.publish(Empty())
         elif(cmdvelglb.poses[self.agent].orientation.z > 0):
+            print("Landing")            
             self.land.publish(Empty())
         else:
             cmdvel.linear.x = cmdvelglb.poses[self.agent].position.x
