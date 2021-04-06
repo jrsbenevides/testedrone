@@ -12,6 +12,8 @@ from tf.transformations import euler_from_quaternion
 class globalPlanner:
     def __init__(self):
         self.agent = 0    #Defines ID number of this agent (replace for hardware definition)
+        self.flagBusy = False
+        self.timeout = 10
         print("linha14")
         self.cmd_pub  = rospy.Publisher("cmd_vel", Twist, queue_size=1)
         self.odom_pub = rospy.Publisher("odom", Odometry, queue_size=1)
@@ -23,7 +25,8 @@ class globalPlanner:
         self.takeoff = rospy.Publisher("/bebop/takeoff", Empty, queue_size=10)
         self.land = rospy.Publisher("/bebop/land", Empty, queue_size=10)
         rospy.init_node('Rasp_link', anonymous=True)
-
+        self.lastTime = rospy.get_rostime().secs
+        
         print("comecou")
 
     def callback_imu(self, odom_imu):
@@ -43,14 +46,27 @@ class globalPlanner:
         self.odom_pub.publish(odomimu)
 
     def callback_cmd(self, cmdvelglb):
+        
         cmdvel = Twist()
+        
+        if(self.flagBusy == True):                                  # Does the timeout handling for taking off and landing
+            if(rospy.get_rostime().secs - self.lastTime >= self.timeout):
+                self.flagBusy = False
+                self.lastTime = rospy.get_rostime()
 
         if(cmdvelglb.poses[self.agent].orientation.y > 0):
-            print("Taking Off")            
-            self.takeoff.publish(Empty())
+            if(self.flagBusy == False):
+                print("###Taking Off")            
+                # self.takeoff.publish(Empty())
+                self.flagBusy = True
+                self.lastTime = rospy.get_rostime().secs
+
         elif(cmdvelglb.poses[self.agent].orientation.z > 0):
-            print("Landing")            
-            self.land.publish(Empty())
+            if(self.flagBusy == False):
+                print("###Landing")            
+                # self.land.publish(Empty())
+                self.flagBusy = True
+                self.lastTime = rospy.get_rostime().secs                
         else:
             cmdvel.linear.x = cmdvelglb.poses[self.agent].position.x
             cmdvel.linear.y = cmdvelglb.poses[self.agent].position.y
@@ -60,7 +76,7 @@ class globalPlanner:
             cmdvel.angular.z = cmdvelglb.poses[self.agent].orientation.x
 
             #EXECUTA SEMPRE QUE CHEGA MENSAGEM NOVA NO TOPICO GLOBAL (VINDO DO DRONE_DEV)
-            self.cmd_pub.publish(cmdvel)
+            # self.cmd_pub.publish(cmdvel)
 
 def main():
     print("linha45")

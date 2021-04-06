@@ -7,10 +7,10 @@ from nav_msgs.msg import Odometry
 def sampleIMU():
     agent = 0
     nOfAgents = 5
-    dt = 0
+    dt = 0.0
     pubIMU = rospy.Publisher("odom_imu", Odometry, queue_size=1)
     rospy.init_node('pubOdom', anonymous=True)
-    rate = rospy.Rate(100) # 100hz
+    rate = rospy.Rate(50) # 50hz
     while not rospy.is_shutdown():
         
         odomimu = Odometry()
@@ -34,6 +34,14 @@ def sampleIMU():
         #INCREMENTA O AGENTE    
         agent = agent + 1
         dt = dt + 0.1
+
+        #debug
+        print("Enviando Msg do Ag " + odomimu.header.frame_id)
+        print("\nConteudo:")
+        print("\nx:" + str(odomimu.pose.pose.position.x))
+        print("\ny:" + str(odomimu.pose.pose.position.y))
+        print("\nz:" + str(odomimu.pose.pose.position.z))
+
         if(agent >= nOfAgents):
             agent = 0
         rate.sleep()
