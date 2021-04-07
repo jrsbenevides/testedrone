@@ -25,7 +25,7 @@ def ControlDecision():
         cmdglb.orientation.w = 0
         cmdglb.orientation.x = 0
         cmdglb.orientation.y = 0 #takeoff instruction
-        cmdglb.orientation.z = 0 #land instruction
+        cmdglb.orientation.z = 1 #land instruction
 
         ps.poses.append(cmdglb)
 

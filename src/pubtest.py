@@ -57,14 +57,15 @@ class globalPlanner:
         if(cmdvelglb.poses[self.agent].orientation.y > 0):
             if(self.flagBusy == False):
                 print("###Taking Off")            
-                # self.takeoff.publish(Empty())
+                self.takeoff.publish(Empty())
+                print("###Done")    
                 self.flagBusy = True
                 self.lastTime = rospy.get_rostime().secs
 
         elif(cmdvelglb.poses[self.agent].orientation.z > 0):
             if(self.flagBusy == False):
                 print("###Landing")            
-                # self.land.publish(Empty())
+                self.land.publish(Empty())
                 self.flagBusy = True
                 self.lastTime = rospy.get_rostime().secs                
         else:
