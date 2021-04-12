@@ -6,11 +6,11 @@ from nav_msgs.msg import Odometry
 
 def sampleIMU():
     agent = 0
-    nOfAgents = 5
+    nOfAgents = 1
     dt = 0.0
-    pubIMU = rospy.Publisher("odom_imu", Odometry, queue_size=1)
+    pubIMU = rospy.Publisher("/odom_global", Odometry, queue_size=1)
     rospy.init_node('pubOdom', anonymous=True)
-    rate = rospy.Rate(50) # 50hz
+    rate = rospy.Rate(25) # 25hz
     while not rospy.is_shutdown():
         
         odomimu = Odometry()

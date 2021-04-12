@@ -14,17 +14,16 @@ class globalPlanner:
         self.agent = 0    #Defines ID number of this agent (replace for hardware definition)
         self.flagBusy = False
         self.timeout = 10
-        print("linha14")
-        self.cmd_pub  = rospy.Publisher("cmd_vel", Twist, queue_size=1)
-        self.odom_pub = rospy.Publisher("odom", Odometry, queue_size=1)
-        print("linha17")
-        self.cmd_sub = rospy.Subscriber("cmd_global", PoseArray, self.callback_cmd)
-        print("linha19")
-        self.odom_sub = rospy.Subscriber("odom_imu", Odometry, self.callback_imu)      #APENAS DEBUG
-        print("linha21")
-        self.takeoff = rospy.Publisher("/bebop/takeoff", Empty, queue_size=10)
-        self.land = rospy.Publisher("/bebop/land", Empty, queue_size=10)
-        rospy.init_node('Rasp_link', anonymous=True)
+        
+        self.cmd_sub    = rospy.Subscriber("/cmd_global", PoseArray, self.callback_cmd)
+        self.odom_sub   = rospy.Subscriber("/bebop/odom", Odometry, self.callback_imu)      #APENAS DEBUG
+
+        self.takeoff    = rospy.Publisher("/bebop/takeoff", Empty, queue_size=10)
+        self.land       = rospy.Publisher("/bebop/land", Empty, queue_size=10)
+        self.reset      = rospy.Publisher("/bebop/reset", Empty, queue_size=10)
+        self.cmd_pub    = rospy.Publisher("/bebop/cmd_vel", Twist, queue_size=1)
+        self.odom_pub   = rospy.Publisher("/odom_global", Odometry, queue_size=1)        
+        rospy.init_node('ncs_slave', anonymous=True)
         self.lastTime = rospy.get_rostime().secs
         
         print("comecou")
@@ -41,7 +40,7 @@ class globalPlanner:
         odomimu.header.stamp.secs = rospy.get_rostime().secs
         odomimu.header.stamp.nsecs = rospy.get_rostime().nsecs
 
-        odomimu.header.frame_id = "3"
+        odomimu.header.frame_id = "0"
         #EXECUTA TODA VEZ QUE CHEGA UPDATE NA IMU
         self.odom_pub.publish(odomimu)
 
@@ -54,21 +53,23 @@ class globalPlanner:
                 self.flagBusy = False
                 self.lastTime = rospy.get_rostime()
 
-        if(cmdvelglb.poses[self.agent].orientation.y > 0):
+        if(cmdvelglb.poses[self.agent].orientation.w > 0):    # First priority goes to reset (emergency)
+            self.reset.publish(Empty())
+        elif(cmdvelglb.poses[self.agent].orientation.z > 0):  # Then to landing
+            if(self.flagBusy == False):
+                print("###Landing")            
+                self.land.publish(Empty())
+                print("###Done")  
+                self.flagBusy = True
+                self.lastTime = rospy.get_rostime().secs     
+        elif(cmdvelglb.poses[self.agent].orientation.y > 0): # Then to taking off
             if(self.flagBusy == False):
                 print("###Taking Off")            
                 self.takeoff.publish(Empty())
                 print("###Done")    
                 self.flagBusy = True
                 self.lastTime = rospy.get_rostime().secs
-
-        elif(cmdvelglb.poses[self.agent].orientation.z > 0):
-            if(self.flagBusy == False):
-                print("###Landing")            
-                self.land.publish(Empty())
-                self.flagBusy = True
-                self.lastTime = rospy.get_rostime().secs                
-        else:
+        else:                                               # Then to regular flight
             cmdvel.linear.x = cmdvelglb.poses[self.agent].position.x
             cmdvel.linear.y = cmdvelglb.poses[self.agent].position.y
             cmdvel.linear.z = cmdvelglb.poses[self.agent].position.z
@@ -77,12 +78,12 @@ class globalPlanner:
             cmdvel.angular.z = cmdvelglb.poses[self.agent].orientation.x
 
             #EXECUTA SEMPRE QUE CHEGA MENSAGEM NOVA NO TOPICO GLOBAL (VINDO DO DRONE_DEV)
-            # self.cmd_pub.publish(cmdvel)
+            self.cmd_pub.publish(cmdvel)
 
 def main():
-    print("linha45")
+    
     globalPlanner()
-    print("linha47")
+    
     try:
         rospy.spin()
     except rospy.ROSInterruptException:
